@@ -80,6 +80,9 @@ class ARope : AActor
 	UMeshComponent StartObject;
 	UMeshComponent EndObject;
 
+	TArray<AActor> RopeIgnoreActors;
+	TArray<AActor> WithIgnoreTags;
+
 	UPROPERTY(DefaultComponent)
 	USceneComponent StartObjectAttachPosition = nullptr;
 
@@ -93,7 +96,7 @@ class ARope : AActor
 	float InvincibleTime = 0.3;
 
 	default SetTickGroup(ETickingGroup::TG_PostUpdateWork);
-	
+
 	UFUNCTION(BlueprintOverride)
 	void BeginPlay()
 	{
@@ -120,6 +123,10 @@ class ARope : AActor
 		}
 
 		DefaultParticleDistance = ParticleDistance;
+
+		RopeIgnoreActors.Add(Gameplay::GetPlayerCharacter(0));
+		GetAllActorsOfClassWithTag(n"RopeIgnore", WithIgnoreTags);
+		RopeIgnoreActors.Append(WithIgnoreTags);
 	}
 
 	UFUNCTION(BlueprintOverride)
@@ -368,15 +375,13 @@ class ARope : AActor
 
 	void SimulateVerlet(float DeltaSeconds)
 	{
-		TArray<AActor> ToIgnore;
-		ToIgnore.Add(Gameplay::GetPlayerCharacter(0));
 		FHitResult Hit;
 		for (int i = 0; i < NodePositions.Num(); i++)
 		{
 			FVector NewOldPosition = NodePositions[i];
 			FVector NewPosition = NodePositions[i] * 2 - NodeOldPositions[i] + (NodeAccelerations[i] * DeltaSeconds * DeltaSeconds);
 
-			if (bCollisionEnabled && System::SphereTraceSingle(NodePositions[i], NewPosition, RopeRadius, ETraceTypeQuery::TraceTypeQuery_MAX, false, ToIgnore, EDrawDebugTrace::None, Hit, true))
+			if (bCollisionEnabled && System::SphereTraceSingle(NodePositions[i], NewPosition, RopeRadius, ETraceTypeQuery::TraceTypeQuery_MAX, false, RopeIgnoreActors, EDrawDebugTrace::None, Hit, true))
 			{
 				NewPosition = Hit.ImpactPoint + Hit.Normal * RopeRadius;
 			}
